@@ -1,0 +1,101 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{natbib}
+\usepackage{tikz}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\newcommand{\RR}{\mathbb R}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\maximize}{maximize}
+\DeclareMathOperator*{\minimize}{minimize}
+\begin{document}
+\title{Learning an angular function using a kernel}
+\author{Toby Dylan Hocking}
+\maketitle
+
+\section{Introduction}
+
+For the graph layout project we use angles in the domain $[-\pi/2,
+\pi/2)=\Theta$ as features. Assume we have a feature vector
+$x\in\Theta^p$ and that we want to learn a function
+$f:\Theta^p\rightarrow\RR$. To avoid overfitting we need to have
+$f(-\pi/2)=f(\pi/2)$. In these notes I discuss how to enforce this
+constraint using a kernel.
+
+\section{Example}
+
+In the plot below, I show 20 example graph layouts, along with the
+angle feature value in the panel title. It is clear that the vertical
+edges are very similar in appearance, but very different in angle,
+which is around $\pi/2$ and $-\pi/2$. We would like to learn a
+function which is continuous across the edges of this circular space.
+
+\input{figure-angles-layouts}
+
+We calculate one angular feature $x\in\Theta$ for each of the layouts
+on the previous page, and plot the distribution of features over the
+two classes.
+
+\input{figure-features}
+
+The goal is to learn a scoring function $f:\Theta\rightarrow\RR$ and
+classifier $g:\Theta\rightarrow\{-1,1\}$ that shares information
+between the left and right edges of the plot. 
+
+\newpage
+
+\section{The angular distance function}
+
+For $x,y\in\Theta$, we define the distance functions 
+\begin{itemize}
+\item $d_{\text{euclidean}}(x,y)=|x-y|$.
+\item $d_{\text{angular}}(x,y)=\min(|x-y|, 
+x-y+\pi, 
+y-x+\pi)$
+\end{itemize}
+These two distance functions are shown in the plot below.
+
+\input{figure-distance-funs}
+
+Clearly, the angular distance function captures the fact that points
+near the edges should be considered near each other.
+
+\newpage
+
+\section{SVM with angular distance kernel}
+
+When we learn an SVM using kernels defined with these two distance
+measures, we get the following functions (lines) for 20 training
+points (black dots).
+
+\input{figure-svm}
+
+As expected, the function learned using the angular distance is
+continuous across the left and right edges of the domain. In the top
+data it does not make much of a difference, but in the bottom data
+sets it clearly guards against overfitting. In detail, I solved hard
+margin kernel SVM:
+\begin{equation}
+  \label{eq:hard-margin-kernel-svm}
+  \begin{aligned}
+      \minimize_{\alpha\in\RR^n,\beta\in\RR}\ \  & 
+  \alpha^\intercal K \alpha\\
+  \text{subject to}\ \ & y_i(\alpha^\intercal K_i + \beta) \geq 1
+  \end{aligned}
+\end{equation}
+The learned function is $f(x) = \beta + \sum_{i=1}^n
+\alpha_iK(x,x_i)$. To prove that $f(-\pi/2)=f(\pi/2)$, use the fact
+that $K(-\pi/2,x)=K(\pi/2,x)$. We used the kernel $K(x,x') = \exp(-
+d(x,x'))$, so all we have to do is show that
+$d(-\pi/2,x)=d(\pi/2,x)$. By definition,
+\begin{eqnarray*}
+  d_{\text{angular}}(-\pi/2, x)
+&=&\min(|x|, |x-\pi|)\\
+&=&d_{\text{angular}}(\pi/2, x).
+\end{eqnarray*}
+
+%\bibliographystyle{abbrvnat}
+%\bibliography{refs}
+
+\end{document}
